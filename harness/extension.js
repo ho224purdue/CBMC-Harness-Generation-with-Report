@@ -67,11 +67,11 @@ function readCFile(workspacePath, cProjectDir, function_name) {
 	// 	parameters = true;
 	// }
 
-	// Parse for function name within (case-sensitive, EXACT match)
+	// Parse for function name within (case-sensitive, startswith match)
 	for (let funcProcessed in context.functionMap) {
 		// because it has to be an exact match, now that all functions are taken into account
 		// (parameters) ? funcProcessed = key : funcProcessed = key.match(/^(\w+)/)[1];
-		if (function_name === funcProcessed && cProjectDir === context.functionMap[funcProcessed]) { // if found return context
+		if (funcProcessed.startsWith(function_name) && cProjectDir === context.functionMap[funcProcessed]) { // if found return context
 			// const output = [
 			// 	context.functionMap[key],
 			// pathFunctionMap,
@@ -154,7 +154,8 @@ function activate(context) {
 		if (context_output === null) return;
 		// Execute logic using the provided inputs
 		vscode.window.showInformationMessage(`Generating harness for: ${file_name} -> Function: ${function_name}`);
-
+		// dfs to retrieve all relevant function info
+		
 	});
 
 	// cleanup
