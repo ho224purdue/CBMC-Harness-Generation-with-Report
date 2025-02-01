@@ -22,7 +22,6 @@ function extractFunctionsAndCalls(filePath, functionMap, callMatrix, allFunction
     const tree = parser.parse(sourceCode);
     const root = tree.rootNode;
 
-    // Utility to add a new function name into allFunctions if not already present
     function addFunctionToList(funcName) {
         if (!allFunctions.includes(funcName)) {
             allFunctions.push(funcName);
@@ -30,44 +29,33 @@ function extractFunctionsAndCalls(filePath, functionMap, callMatrix, allFunction
     }
 
     function traverse(node, currentFunction = null) {
-        // Detect a function definition
         if (node.type === 'function_definition') {
-            // Typically child(1) is the function declarator/identifier in a simple case
-            const funcName = node.child(1).text;
-            // Record in functionMap
+            const funcName = node.child(1).text.replace(/\(.*/, '');
+            // We assume functionMap is already populated, but let's do safety:
             functionMap[funcName] = filePath;
             addFunctionToList(funcName);
 
-            // Traverse inside the function body with "currentFunction = funcName"
             for (let i = 0; i < node.childCount; i++) {
                 traverse(node.child(i), funcName);
             }
         }
-        // Detect a call expression
         else if (node.type === 'call_expression' && currentFunction) {
-            // const calledFuncName = node.child(0).text; // just include call no '()'
+            const calledFuncName = node.child(0).text;
+            // Only record if it's in functionMap (i.e., locally defined)
+            if (functionMap[calledFuncName]) {
+                addFunctionToList(calledFuncName);
 
-            // AST parses functions in a weird way for call_expressions, not including their parameters 
-            // this can cause further room for confusion hence I'm including them here below
-            const calleeName = node.child(0).text;
-            const calleeParams = node.child(1) ? node.child(1).text : '';
-            // e.g. "myFunction" + "(someParam)"
-            const calledFuncName = calleeName + calleeParams;
-
-            addFunctionToList(calledFuncName);
-
-            // Mark the call in callMatrix
-            if (!callMatrix[currentFunction]) {
-                callMatrix[currentFunction] = {};
+                if (!callMatrix[currentFunction]) {
+                    callMatrix[currentFunction] = {};
+                }
+                callMatrix[currentFunction][calledFuncName] = 1;
             }
-            callMatrix[currentFunction][calledFuncName] = 1;
 
-            // Continue traversing children to catch nested calls
+            // Recurse to catch nested
             for (let i = 0; i < node.childCount; i++) {
                 traverse(node.child(i), currentFunction);
             }
         }
-        // Otherwise, keep recursing
         else {
             for (let i = 0; i < node.childCount; i++) {
                 traverse(node.child(i), currentFunction);
@@ -75,9 +63,9 @@ function extractFunctionsAndCalls(filePath, functionMap, callMatrix, allFunction
         }
     }
 
-    // Start traversing from the root
-    traverse(root, null);
+    traverse(root);
 }
+
 
 /**
  * Build an adjacency matrix from the aggregated callMatrix and allFunctions array.
@@ -109,7 +97,70 @@ function buildAdjacencyMatrix(allFunctions, callMatrix) {
     return { matrix, functionIndex };
 }
 
+/**
+ * Parse the file at `filePath`, look for a `function_definition` AST node
+ * whose identifier matches `functionName`, and return its complete source code.
+ *
+ * @param {string} filePath      The .c file you want to parse.
+ * @param {string} functionName  The function name to look for (e.g. "main", "functionA").
+ * @returns {string|null}        The entire text of that function definition, or null if not found.
+ */
+function extractFunctionCode(filePath, functionName) {
+    // 1. Read and parse the file
+    const sourceCode = fs.readFileSync(filePath, 'utf8');
+    const tree = parser.parse(sourceCode);
+    const root = tree.rootNode;
+
+    // 2. Recursively search for a matching function_definition node
+    function findFunctionNode(node) {
+        if (node.type === 'function_definition') {
+            // Typically, `node.child(1)` is the declarator, which might hold the function name
+            const declNode = node.child(1).text.replace(/\(.*/, ''); // remove the parameters after
+            if (declNode && declNode === functionName) {
+                return node; // Found the function definition
+            }
+        }
+        // Otherwise, search all children
+        for (let i = 0; i < node.childCount; i++) {
+            const found = findFunctionNode(node.child(i));
+            if (found) return found;
+        }
+        return null;
+    }
+
+    const funcNode = findFunctionNode(root);
+    if (!funcNode) {
+        return null;
+    }
+
+    // 3. Return the raw text of the function definition node (including the body)
+    // `funcNode.text` gives you everything from the return type to the closing brace.
+    return funcNode.text;
+}
+
+// helper function to only include local functions
+function collectLocalFunctions(filePath, functionMap) {
+    const sourceCode = fs.readFileSync(filePath, 'utf8');
+    const tree = parser.parse(sourceCode);
+    const root = tree.rootNode;
+
+    function traverse(node) {
+        if (node.type === 'function_definition') {
+            const funcName = node.child(1).text.replace(/\(.*/, '');
+            functionMap[funcName] = filePath;
+        }
+        for (let i = 0; i < node.childCount; i++) {
+            traverse(node.child(i));
+        }
+    }
+
+    traverse(root);
+}
+
+
 module.exports = {
+    collectLocalFunctions,
     extractFunctionsAndCalls,
-    buildAdjacencyMatrix
+    buildAdjacencyMatrix,
+    extractFunctionCode
 };

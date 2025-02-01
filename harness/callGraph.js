@@ -1,41 +1,36 @@
 const path = require('path');
 const { getAllCAndHeaderFiles } = require('./getAllCAndHeaderFiles');
-const { extractFunctionsAndCalls, buildAdjacencyMatrix } = require('./parserCore');
+const { collectLocalFunctions, extractFunctionsAndCalls, buildAdjacencyMatrix } = require('./parserCore');
 
-/**
- * Recursively scans a project directory, parses all .c and .h files,
- * and returns an adjacency matrix + function map + more.
- *
- * @param {string} projectPath Path to the directory containing C code
- * @returns {object} An object with { functionMap, callMatrix, adjacencyMatrix, functionIndex, allFunctions }
- */
 function parseProject(projectPath) {
-    // Gather .c and .h files from the directory (recursively)
-    const allFiles = getAllCAndHeaderFiles(projectPath);
+  const allFiles = getAllCAndHeaderFiles(projectPath);
 
-    // Data structures to populate
-    let functionMap = {};   // functionName -> fileWhereDefined
-    let callMatrix = {};   // caller -> { callee: 1, ... }
-    let allFunctions = [];   // a de-duplicated list of all encountered function identifiers (including param combos for calls)
+  let functionMap = {};
+  let callMatrix = {};
+  let allFunctions = [];
 
-    // Parse each file, building the call matrix
-    allFiles.forEach((filePath) => {
-        extractFunctionsAndCalls(filePath, functionMap, callMatrix, allFunctions);
-    });
+  // FIRST PASS: populate functionMap from definitions
+  allFiles.forEach(filePath => {
+    collectLocalFunctions(filePath, functionMap);
+  });
 
-    // Build adjacency matrix
-    const { matrix, functionIndex } = buildAdjacencyMatrix(allFunctions, callMatrix);
+  // SECOND PASS: gather calls, but skip calls to functions not in functionMap
+  allFiles.forEach(filePath => {
+    extractFunctionsAndCalls(filePath, functionMap, callMatrix, allFunctions);
+  });
 
-    return {
-        functionMap,
-        callMatrix,
-        adjacencyMatrix: matrix,
-        functionIndex,
-        allFunctions
-    };
+  const { matrix, functionIndex } = buildAdjacencyMatrix(allFunctions, callMatrix);
+  return {
+    functionMap,
+    callMatrix,
+    adjacencyMatrix: matrix,
+    functionIndex,
+    allFunctions
+  };
 }
 
-// Test directly from CLI (example: node parseProject.js my_project)
+
+// To test directly from CLI (example: node parseProject.js my_project)
 if (require.main === module) {
     if (process.argv.length < 3) {
         console.error("Usage: node parseProject.js <path-to-project>");

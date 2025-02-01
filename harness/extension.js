@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const { spawn, execSync } = require("child_process");
 const { parseProject } = require('./callGraph.js');
+const { extractFunctionCode } = require('./parserCore.js');
 
 // function to get directory Tree structure of current wd (reference for error logging context later on)
 function getDirectoryTree(dirPath, options = {}) {
@@ -46,7 +47,7 @@ function getDirectoryTree(dirPath, options = {}) {
 function readCFile(workspacePath, cProjectDir, function_name) {
 	let context;
 	// invoke callGraph function
-	try { 
+	try {
 		context = parseProject(workspacePath);
 		// returns the following:
 		console.log(context.functionMap);
@@ -68,10 +69,10 @@ function readCFile(workspacePath, cProjectDir, function_name) {
 	// }
 
 	// Parse for function name within (case-sensitive, startswith match)
-	for (let funcProcessed in context.functionMap) {
+	for (let func in context.functionMap) {
 		// because it has to be an exact match, now that all functions are taken into account
 		// (parameters) ? funcProcessed = key : funcProcessed = key.match(/^(\w+)/)[1];
-		if (funcProcessed.startsWith(function_name) && cProjectDir === context.functionMap[funcProcessed]) { // if found return context
+		if (func.startsWith(function_name) && cProjectDir === context.functionMap[func]) { // if found return context
 			// const output = [
 			// 	context.functionMap[key],
 			// pathFunctionMap,
@@ -79,13 +80,68 @@ function readCFile(workspacePath, cProjectDir, function_name) {
 			// 	context.adjacencyMatrix,
 			// 	context.functionIndex
 			// ];
-			return context;
+			return [func, context];
 		}
 	}
 	// function not found
 	vscode.window.showErrorMessage(`Specified function ${function_name} was not found within active file`);
 	return null; // Return null if no match found
 }
+
+// function to call for creating hashmap {funcName: code}
+function extractCode(entry_point, context) {
+	const reverseDict = (obj) => Object.fromEntries(Object.entries(obj).map(([k, v]) => [v, k]));
+	const indexFunction = reverseDict(context.functionIndex);
+	const all_code = {};
+	const visited = new Set(); // track visited functions
+	let queue = [entry_point];
+	while (queue.length > 0) {
+		const func = queue.shift();
+		if (!visited.has(func)) {
+			// extract code
+			all_code[func] = extractFunctionCode(context.functionMap[func], func);
+
+			visited.add(func); // push into set
+			const index = context.functionIndex[func];
+			const n = context.adjacencyMatrix.length;
+			for (let i = 0; i < n; i++) {
+				const value = context.adjacencyMatrix[index][i];
+				if (value === 1) {
+					const funcChildren = indexFunction[i];
+					queue.push(funcChildren) // push into queue for BFS
+				}
+			}
+		}
+
+	}
+	return all_code;
+}
+
+// function to call Django backend
+async function sendRequest(entry_point, context, all_code, tree) {
+	const url = "http://localhost:8000"; // Django typically starts at Port 8000 local
+	const payload = {
+		entry: entry_point,
+		context: context,
+		code: all_code,
+		dir_tree: tree
+	};
+	try {
+		const response = await fetch(url, {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json"
+			},
+			body: JSON.stringify(payload)
+		});
+		const data = await response.json();
+		console.log(data);
+		return data;
+	} catch (error) {
+		console.log("Something went wrong with API call to backend:", error);
+	}
+}
+
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
 /**
@@ -154,8 +210,12 @@ function activate(context) {
 		if (context_output === null) return;
 		// Execute logic using the provided inputs
 		vscode.window.showInformationMessage(`Generating harness for: ${file_name} -> Function: ${function_name}`);
-		// dfs to retrieve all relevant function info
-		
+		const entry_point = context_output[0];
+		const context = context_output[1];
+		// extract code function (BFS)
+		const all_code = extractCode(entry_point, context);
+		console.log(all_code);
+		console.log(await sendRequest(entry_point, context, all_code, tree));
 	});
 
 	// cleanup
