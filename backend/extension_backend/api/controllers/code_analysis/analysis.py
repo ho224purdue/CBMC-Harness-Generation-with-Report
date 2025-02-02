@@ -1,3 +1,4 @@
+import os
 import json
 from ..call import queryLLM
 
@@ -25,20 +26,12 @@ Starting from **entry_point** traverse through **callMatrix** until all **code**
   "variable_name": ["variable_type", "assumption_type", "description of the assumption (within 20 words)"]
 } 
 
-Only produce the json object above. Do not include anything other than that in your response
+Only produce the json object above. Do not include anything else in your response
 
 ### **Example**
 \
 #include <stdio.h>
 
-// Function to print array elements
-void printArray(int arr[], int size) {
-    for (int i = 0; i < size - 1; i++) {
-        printf("%d, ", arr[i]);
-    }
-    printf("%d", arr[size - 1]);
-    printf("\\n");
-}
 
 // Insertion Sort function
 void insertionSort(int arr[], int size) {
@@ -52,17 +45,7 @@ void insertionSort(int arr[], int size) {
         }
     }
 }
-
-int main() {
-    int arr[7] = {3, 1, 4, 2, 5, 6, 0};
-    int size = 7;
-
-    printArray(arr, size);
-    insertionSort(arr, size);
-    printArray(arr, size);
-
-    return 0;
-}\
+\
 
 ### **Output**
 {
@@ -96,7 +79,9 @@ def analyze(company, context_data, model = None):
     if response == None:
         raise Exception("An error has occurred during API call to LLM")
     # log output in .txt file
-    with open("analysis_log.txt", 'w') as file:
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    log_file_path = os.path.join(script_dir, "analysis_log.txt")
+    with open(log_file_path, 'w') as file:
         file.write(prompt + '\n')
         file.write(response)
     clean_response = response.strip("`").replace("json\n", "", 1) # strip start & end ``` and "json" text
