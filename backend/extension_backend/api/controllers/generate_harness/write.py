@@ -81,7 +81,7 @@ void insertionSort_harness() {
 """
 
 # call analysis function (write prompt logic here)
-def write_harness(company, context_data, assumptions, model = None):
+def write_harness(company, context_data, assumptions, model):
     context = context_data["context"]
     entry_point = context_data["entry"]
     code = context_data["code"]
@@ -98,13 +98,13 @@ def write_harness(company, context_data, assumptions, model = None):
     if response == None:
         raise Exception("An error has occurred during API call to LLM")
     # print(response)
-    
+
     # log output in .txt file
     script_dir = os.path.dirname(os.path.abspath(__file__))
     log_file_path = os.path.join(script_dir, "write_log.txt")
-    with open("log_file_path", 'w') as file:
-        file.write(prompt + '\n')
+    with open(log_file_path, 'w') as file:
+        file.write(prompt + '\n\n')
         file.write(response)
     clean_response = response.strip("`").replace("c\n", "", 1) # strip start & end ``` and "c" text
-    output = json.loads(clean_response) # Convert JSON string to Python dictionary
-    return output
+
+    return clean_response # should return string

@@ -1,0 +1,164 @@
+
+### Task: Generating a CBMC Harness for Function Verification
+
+You are given a function and its relevant assumptions, along with structured metadata representing function relationships and dependencies. Your task is to generate a **CBMC proof harness** using **only the specified syntax**.
+
+### **Syntax Reference**
+Use only the following syntax when generating assumptions:
+
+unsigned int nondet_uint();
+__CPROVER_assume(condition);
+__CPROVER_assert(condition, "assertion message");
+
+You must ensure that:
+- All nondeterministic values are constrained with __CPROVER_assume
+- Assertions are placed after assumptions to prevent vacuous proofs
+- Loop unwinding assertions are included where necessary and appropriately
+- Stub functions return nondeterministic values but are assumed within valid ranges
+
+### **Input Description**
+- **entryPoint**: The main function to generate the harness for is also a key that can be used to access functionMap, functionIndex, functionCode
+- **callMatrix**: Represents function call dependencies, where keys are functions mapping to called functions with invocation counts, illustrating execution flow.
+- **functionCode**: A mapping `{ function_name: code_for_function }` linking function names to their relevant code
+- **codeAnalysis**: A mapping of function assumptions for verification, categorizing variables by type, modeling input constraints, global state, loop bounds, and stub behavior for analysis containing:
+{
+  "function_name": {"variable_name": ["variable_type", "assumption_type", "description of the assumption (within 20 words)"]}
+} 
+
+### **Expected Output (harness name should be entryPoint_harness) **
+**entryPoint**_harness() {
+    assumptions here
+    **entryPoint** function here
+    assumptions (where necessary)
+}
+
+Only produce the harness function above. Do not include anything other than that in your response
+
+### **Example**
+// Insertion Sort function
+void insertionSort(int arr[], int size) {
+    for (int i = 1; i < size; i++) {
+        for (int j = 0; j < i; j++) {
+            if (arr[j] > arr[i]) {
+                int temp = arr[j];
+                arr[j] = arr[i];
+                arr[i] = temp;
+            }
+        }
+    }
+}
+// **codeAnalysis** input:
+{
+  "arr": ["int[]", "input variable modeling", "The array should be initialized and its size must be known and fixed."],
+  "size": ["int", "input variable modeling", "The size of the array must be positive and correctly reflect the number of elements in arr."],
+  "i": ["int", "loop unwinding assertions", "The loop variable i should iterate from 1 to size-1, ensuring it stays within bounds."],
+  "j": ["int", "loop unwinding assertions", "The loop variable j should iterate from 0 to i-1, ensuring it does not access out-of-bound elements."]
+}
+
+### **Output**
+void insertionSort_harness() {
+    int arr[10];
+    int size = nondet_uint();
+
+    __CPROVER_assume(size > 0 && size <= 10);
+
+    for (int i = 1; i < size; i++) {
+        __CPROVER_assume(i >= 1 && i < size);
+        for (int j = 0; j < i; j++) {
+            __CPROVER_assume(j >= 0 && j < i);
+        }
+    }
+
+    insertionSort(arr, size);
+}
+
+
+{
+    "entryPoint": "main",
+    "callMatrix": {
+        "main": {
+            "process_input_and_update_counter": 1
+        },
+        "sub": {
+            "functionA": 1
+        },
+        "main_rand": {
+            "sub": 1
+        },
+        "functionA": {
+            "functionB": 1
+        },
+        "process_input_and_update_counter": {
+            "read_sensor_stub": 1
+        }
+    },
+    "functionCode": {
+        "main": "int main()\n{\n  // 3. INPUT VARIABLE MODELING:\n  //   Use a nondeterministic unsigned int for user_input:\n  unsigned int user_input = nondet_uint();\n\n  // Restrict the value of user_input (making it a realistic, bounded input):\n  __CPROVER_assume(user_input <= 5);\n\n  // For demonstration, also randomize the global with an assumption:\n  global_counter = (int)nondet_uint();\n  __CPROVER_assume(global_counter >= 0 && global_counter <= 10);\n\n  // 4. LOOP UNWINDING (inside process_input_and_update_counter):\n  int final_value = process_input_and_update_counter(user_input);\n\n  // A simple assertion to check that final_value is nonnegative:\n  __CPROVER_assert(final_value >= 0, \"final_value is nonnegative\");\n\n  return 0;\n}",
+        "process_input_and_update_counter": "int process_input_and_update_counter(unsigned int input)\n{\n  // 4. LOOP UNWINDING:\n  //    The loop is unrolled by CBMC up to the chosen unwind bound.\n  for(unsigned int i = 0; i < input; i++)\n  {\n    global_counter++;\n  }\n\n  // 2. STUB FUNCTION USAGE:\n  //    We read from the sensor stub multiple times\n  //    (each call can yield a different nondet value).\n  int sensor_val1 = read_sensor_stub();\n  int sensor_val2 = read_sensor_stub();\n\n  // Combine them in some way:\n  int result = sensor_val1 + sensor_val2 + global_counter;\n\n  // Optional extra check:\n  __CPROVER_assert(result > -1000, \"result is above -1000\");\n\n  return result;\n}",
+        "read_sensor_stub": "int read_sensor_stub(void)\n{\n  // Stub out sensor reading as a nondeterministic value:\n  return nondet_int();\n}"
+    },
+    "codeAnalysis": {
+        "main": {
+            "user_input": [
+                "unsigned int",
+                "input variable modeling",
+                "Input should be a bounded unsigned int, not exceeding 5"
+            ],
+            "global_counter": [
+                "int",
+                "global variable modeling",
+                "Global variable bounds between 0 and 10"
+            ]
+        },
+        "process_input_and_update_counter": {
+            "input": [
+                "unsigned int",
+                "input variable modeling",
+                "Input dictates loop iterations, bounded by user input in 'main'"
+            ],
+            "i": [
+                "unsigned int",
+                "loop unwinding assertions",
+                "Loop variable iterates from 0 to input - 1"
+            ],
+            "sensor_val1": [
+                "int",
+                "stub function modeling",
+                "Obtained from a stub representing nondeterministic sensor value"
+            ],
+            "sensor_val2": [
+                "int",
+                "stub function modeling",
+                "Another read from sensor stub, can vary"
+            ]
+        },
+        "read_sensor_stub": {
+            "return": [
+                "int",
+                "stub function modeling",
+                "Returns a nondeterministic integer from a stub"
+            ]
+        }
+    }
+}
+
+```c
+void main_harness() {
+    unsigned int user_input = nondet_uint();
+
+    __CPROVER_assume(user_input <= 5);
+
+    int sensor_val1;
+    int sensor_val2;
+
+    __CPROVER_assume(sensor_val1 >= -1000 && sensor_val1 <= 1000);
+    __CPROVER_assume(sensor_val2 >= -1000 && sensor_val2 <= 1000);
+
+    global_counter = (int)nondet_uint();
+    __CPROVER_assume(global_counter >= 0 && global_counter <= 10);
+
+    int final_value = process_input_and_update_counter(user_input);
+
+    __CPROVER_assert(final_value >= 0, "final_value is nonnegative");
+}
+```

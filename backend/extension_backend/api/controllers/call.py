@@ -14,7 +14,6 @@ load_dotenv(ENV_PATH)
 
 # OpenAI
 def fetchOpenAI(payload, model):
-    model = "gpt-4o" if model is None else model
     try:
         client = OpenAI(api_key=os.getenv("OPENAI_KEY"))
         response = client.chat.completions.create(
@@ -33,7 +32,6 @@ def fetchOpenAI(payload, model):
 
 # for Gemini
 def fetchGoogle(payload, model):
-    model = "gemini-1.5-flash" if model is None else model
     try:
         genai.configure(api_key = os.getenv("GOOGLE_KEY"))
         model = genai.GenerativeModel(model)
@@ -45,7 +43,6 @@ def fetchGoogle(payload, model):
 
 # for Anthropic
 def fetchAnthropic(payload, model):
-    model = "claude-3-5-sonnet-20241022" if model is None else model
     try:
         client = anthropic.Anthropic(
             # defaults to os.environ.get("ANTHROPIC_API_KEY")
@@ -63,19 +60,22 @@ def fetchAnthropic(payload, model):
         print(f"Exception occurred during Anthropic fetch call: {str(e)}")
         return None 
 
-def queryLLM(company, prompt, model = None, logPath = None):
+def queryLLM(company, prompt, model, logPath = None):
     service = company.lower()
     # use match (switch cases) to parse different response structures
     match service:
         case "openai":
+            model = "gpt-4o" if model is None else model
             response = fetchOpenAI(prompt, model)
             answer = response.choices[0].message.content if response is not None else None
             return answer
         case "google":
+            model = "gemini-1.5-flash" if model is None else model
             response = fetchGoogle(prompt, model)
             answer = response.text if response is not None else None
             return answer
         case "anthropic":
+            model = "claude-3-5-sonnet-20241022" if model is None else model
             response = fetchAnthropic(prompt, model)
             answer = response.content[0].text if response is not None else None
             return answer

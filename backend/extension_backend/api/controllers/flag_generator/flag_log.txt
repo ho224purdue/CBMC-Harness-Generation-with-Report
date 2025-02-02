@@ -1,0 +1,173 @@
+
+### Task: CBMC Flag Selection**
+Analyze function properties and generate a JSON object containing appropriate CBMC flags that should be used for verification.
+    - Only use documented CBMC flags that are directly relevant to the function analysis
+    - Flags should be based on the syntax referenced in this prompt
+    - Do not generate unnecessary or default flags—only those required by the function’s structure and verification needs
+
+### **CBMC Flag Reference*
+CBMC supports various verification and transformation options. Based on the function analysis, select appropriate flags from the following categories:
+    - Analysis Options: (--trace, --stop-on-fail, --property id)
+    - Instrumentation Options: (--bounds-check, --pointer-check, --memory-leak-check, --unwind nr, --no-assertions)
+    - Backend Solver Options: (--sat-solver z3, --dimacs, --smt2)
+    - Program Representations: (--show-symbol-table, --show-goto-functions)
+
+### **Input Description**
+- **entryPoint**: A single function name that is the main function corresponding to 1 key that can be used to access functionMap, functionIndex, functionCode
+- **callMatrix**: Represents function call dependencies, where keys are functions mapping to called functions with invocation counts, illustrating execution flow.
+- **adjacencyMatrix**: An array of arrays representation of callMatrix, where each row represents a function and each column denotes its calls to other functions
+- **functionMap**: A dictionary mapping `{ function_name: absolute_path_to_source_file }`, linking function names to their absolute path
+- **functionIndex**: A mapping `{ function_name: index_in_adjacencyMatrix }`, linking function names to their indices for referencing **adjacencyMatrix**
+- **functionCode**: A mapping `{ function_name: code_for_function }` linking function names to their relevant code
+
+### **Expected Output (JSON Format)**
+Starting from **entry_point** traverse through **callMatrix** until all **code** analyzed, output a JSON object listing CBMC flags:
+{
+  "flag_name": "flag_value"
+}
+Only produce the JSON object as output, do not include anything else in your response
+
+### **Example**
+#include <stdio.h>
+
+
+// Insertion Sort function
+void insertionSort(int arr[], int size) {
+    for (int i = 1; i < size; i++) {
+        for (int j = 0; j < i; j++) {
+            if (arr[j] > arr[i]) {
+                int temp = arr[j];
+                arr[j] = arr[i];
+                arr[i] = temp;
+            }
+        }
+    }
+}
+
+### **Output**
+{
+  "--bounds-check": "enabled",
+  "--pointer-check": "enabled",
+  "--signed-overflow-check": "enabled",
+  "--unwind": "5",
+  "--trace": "enabled"
+}
+
+{
+    "entryPoint": "main",
+    "functionMap": {
+        "main": "/home/russe/cbmc/main.c",
+        "sub": "/home/russe/cbmc/random/main.c",
+        "main_rand": "/home/russe/cbmc/random/main.c",
+        "functionA": "/home/russe/cbmc/random/moduleA.c",
+        "functionB": "/home/russe/cbmc/random/moduleB.c",
+        "read_sensor_stub": "/home/russe/cbmc/src/sensor_stub.c",
+        "process_input_and_update_counter": "/home/russe/cbmc/src/utilities.c"
+    },
+    "callMatrix": {
+        "main": {
+            "process_input_and_update_counter": 1
+        },
+        "sub": {
+            "functionA": 1
+        },
+        "main_rand": {
+            "sub": 1
+        },
+        "functionA": {
+            "functionB": 1
+        },
+        "process_input_and_update_counter": {
+            "read_sensor_stub": 1
+        }
+    },
+    "adjacencyMatrix": [
+        [
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0
+        ],
+        [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1
+        ],
+        [
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0
+        ],
+        [
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0
+        ],
+        [
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0
+        ],
+        [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+        ],
+        [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+        ]
+    ],
+    "functionIndex": {
+        "main": 0,
+        "process_input_and_update_counter": 1,
+        "sub": 2,
+        "functionA": 3,
+        "main_rand": 4,
+        "functionB": 5,
+        "read_sensor_stub": 6
+    },
+    "functionCode": {
+        "main": "int main()\n{\n  // 3. INPUT VARIABLE MODELING:\n  //   Use a nondeterministic unsigned int for user_input:\n  unsigned int user_input = nondet_uint();\n\n  // Restrict the value of user_input (making it a realistic, bounded input):\n  __CPROVER_assume(user_input <= 5);\n\n  // For demonstration, also randomize the global with an assumption:\n  global_counter = (int)nondet_uint();\n  __CPROVER_assume(global_counter >= 0 && global_counter <= 10);\n\n  // 4. LOOP UNWINDING (inside process_input_and_update_counter):\n  int final_value = process_input_and_update_counter(user_input);\n\n  // A simple assertion to check that final_value is nonnegative:\n  __CPROVER_assert(final_value >= 0, \"final_value is nonnegative\");\n\n  return 0;\n}",
+        "process_input_and_update_counter": "int process_input_and_update_counter(unsigned int input)\n{\n  // 4. LOOP UNWINDING:\n  //    The loop is unrolled by CBMC up to the chosen unwind bound.\n  for(unsigned int i = 0; i < input; i++)\n  {\n    global_counter++;\n  }\n\n  // 2. STUB FUNCTION USAGE:\n  //    We read from the sensor stub multiple times\n  //    (each call can yield a different nondet value).\n  int sensor_val1 = read_sensor_stub();\n  int sensor_val2 = read_sensor_stub();\n\n  // Combine them in some way:\n  int result = sensor_val1 + sensor_val2 + global_counter;\n\n  // Optional extra check:\n  __CPROVER_assert(result > -1000, \"result is above -1000\");\n\n  return result;\n}",
+        "read_sensor_stub": "int read_sensor_stub(void)\n{\n  // Stub out sensor reading as a nondeterministic value:\n  return nondet_int();\n}"
+    }
+}
+
+```json
+{
+  "--bounds-check": "enabled",
+  "--pointer-check": "enabled",
+  "--memory-leak-check": "enabled",
+  "--unwind": "5",
+  "--trace": "enabled"
+}
+```

@@ -3,13 +3,18 @@ import json
 from ..call import queryLLM
 
 initial_prompt = """
-### Task: Code Dependency Analysis and Assumption Modeling
+### Task: CBMC Flag Selection**
+Analyze function properties and generate a JSON object containing appropriate CBMC flags that should be used for verification.
+    - Only use documented CBMC flags that are directly relevant to the function analysis
+    - Flags should be based on the syntax referenced in this prompt
+    - Do not generate unnecessary or default flags—only those required by the function’s structure and verification needs
 
-You are given a set of structured inputs that define relationships between functions in a codebase. Your goal is to analyze the function calls, dependencies, and interactions to extract relevant **assumptions** required for verification, focusing on **four key assumption types**:
-1. **Global Variable Modeling** – Handling global variables shared across functions
-2. **Input Variable Modeling** – Defining constraints on input parameters
-3. **Stub Function Modeling** – Replacing function calls with safe assumptions when necessary
-4. **Loop Unwinding Assertions** – Ensuring loops behave correctly within verification constraints
+### **CBMC Flag Reference*
+CBMC supports various verification and transformation options. Based on the function analysis, select appropriate flags from the following categories:
+    - Analysis Options: (--trace, --stop-on-fail, --property id)
+    - Instrumentation Options: (--bounds-check, --pointer-check, --memory-leak-check, --unwind nr, --no-assertions)
+    - Backend Solver Options: (--sat-solver z3, --dimacs, --smt2)
+    - Program Representations: (--show-symbol-table, --show-goto-functions)
 
 ### **Input Description**
 - **entryPoint**: A single function name that is the main function corresponding to 1 key that can be used to access functionMap, functionIndex, functionCode
@@ -20,13 +25,11 @@ You are given a set of structured inputs that define relationships between funct
 - **functionCode**: A mapping `{ function_name: code_for_function }` linking function names to their relevant code
 
 ### **Expected Output (JSON Format)**
-Starting from **entry_point** traverse through **callMatrix** until all **code** analyzed, output a JSON object listing its assumptions using the following format:
-
+Starting from **entry_point** traverse through **callMatrix** until all **code** analyzed, output a JSON object listing CBMC flags:
 {
-  "variable_name": ["variable_type", "assumption_type", "description of the assumption (within 20 words)"]
-} 
-
-Only produce the json object above. Do not include anything else in your response
+  "flag_name": "flag_value"
+}
+Only produce the JSON object as output, do not include anything else in your response
 
 ### **Example**
 \
@@ -49,18 +52,16 @@ void insertionSort(int arr[], int size) {
 
 ### **Output**
 {
-  "insertionSort": {
-    "arr": ["int[]", "input variable modeling", "The array should be initialized and its size must be known and fixed"],
-    "size": ["int", "input variable modeling", "The size of the array must be positive and correctly reflect the number of elements in arr"],
-    "i": ["int", "loop unwinding assertions", "The loop variable i should iterate from 1 to size-1, ensuring it stays within bounds"],
-    "j": ["int", "loop unwinding assertions", "The loop variable j should iterate from 0 to i-1, ensuring it does not access out-of-bound elements"]
-  }
+  "--bounds-check": "enabled",
+  "--pointer-check": "enabled",
+  "--signed-overflow-check": "enabled",
+  "--unwind": "5",
+  "--trace": "enabled"
 }
-
 """
 
 # call analysis function (write prompt logic here)
-def analyze(company, context_data, model):
+def get_flags(company, context_data, model):
     context = context_data["context"]
     entry_point = context_data["entry"]
     code = context_data["code"]
@@ -78,9 +79,11 @@ def analyze(company, context_data, model):
     response = queryLLM(company, prompt, model)
     if response == None:
         raise Exception("An error has occurred during API call to LLM")
+    
+    # print(response)
     # log output in .txt file
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    log_file_path = os.path.join(script_dir, "analysis_log.txt")
+    log_file_path = os.path.join(script_dir, "flag_log.txt")
     with open(log_file_path, 'w') as file:
         file.write(prompt + '\n\n')
         file.write(response)
