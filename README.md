@@ -13,10 +13,10 @@ This system is a VScode extension for developers, allowing them to generate a me
 
 Ensure you have the following installed on your system:
 
-- [Node] I have v20.6.1 on my environment
-- [npm] I have version 9.8.1
-- [python] You'll need pip
-- [cbmc] Environmental variables have to be set up, has to be able to work from terminal
+- `node` I have v20.6.1 on my environment
+- `npm`I have version 9.8.1
+- `python` You'll need pip
+- `cbmc` Environmental variables have to be set up, has to be able to work from terminal
 
 ## **Project Structure**
 
