@@ -119,7 +119,7 @@ function extractCode(entry_point, context) {
 
 // function to call Django backend
 async function sendRequest(entry_point, context, all_code, tree) {
-	const url = "http://localhost:8000"; // Django typically starts at Port 8000 local
+	const url = "http://localhost:8000/generate"; // Django typically starts at Port 8000 local
 	const payload = {
 		entry: entry_point,
 		context: context,
@@ -135,11 +135,11 @@ async function sendRequest(entry_point, context, all_code, tree) {
 			body: JSON.stringify(payload)
 		});
 		const data = await response.json();
-		console.log(data);
 		return data;
 	} catch (error) {
 		console.log("Something went wrong with API call to backend:", error);
 	}
+	return null;
 }
 
 // This method is called when your extension is activated
