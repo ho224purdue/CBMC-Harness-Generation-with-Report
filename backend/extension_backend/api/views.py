@@ -4,6 +4,7 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from .controllers.call import queryLLM
 from .controllers.code_analysis.analysis import analyze
+from .controllers.generate_harness.write import write_harness
 
 def initial(request):
     return JsonResponse({"message": "Server up and running!", "status": 200})
@@ -36,7 +37,8 @@ def generate(request):
             if not request.body:
                 return JsonResponse({"status": 400, "message": "Empty request body"})
             data = json.loads(request.body)
-            parameters = analyze("openai", data)
+            assumptions = analyze("openai", data)
+            write_harness("openai", data, assumptions)
             return JsonResponse({"status": 200, "message": "Data successfully received!"})
         except json.JSONDecodeError:
             return JsonResponse({"status": 400, "message": "JSON decoding error"})
