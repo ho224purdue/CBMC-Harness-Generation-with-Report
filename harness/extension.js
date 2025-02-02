@@ -50,11 +50,11 @@ function readCFile(workspacePath, cProjectDir, function_name) {
 	try {
 		context = parseProject(workspacePath);
 		// returns the following:
-		console.log(context.functionMap);
-		// console.log(context.callMatrix);
-		console.log(context.adjacencyMatrix);
-		console.log(context.functionIndex);
-		// console.log(context.allFunctions);
+		// console.log(context.functionMap); // {function name: absolute path}
+		// console.log(context.callMatrix); // {function name: {invoked function: number of times invoked}}
+		// console.log(context.adjacencyMatrix); // {matrix containing call matrix in graph form}
+		// console.log(context.functionIndex); // {function name: index} (to reference adjacencyMatrix)
+		// console.log(context.allFunctions); // [all functions within workspace]
 	} catch (error) {
 		console.log('Error while reading CFile\n', error);
 	}
@@ -142,6 +142,42 @@ async function sendRequest(entry_point, context, all_code, tree) {
 	return null;
 }
 
+// function to write report and open within user VS code workspace
+function writeAndOpenFile(current_path, fileContent) {
+	const harnessName = fileContent.harness_name;
+	const filePath = path.join(current_path, `${harnessName}_report.txt`);
+
+	const harnessSuccess = fileContent.success;
+	const harnessCode = fileContent.harness.split('\n');
+	const harnessReport = fileContent.report.split('\n');
+
+	// Write the file
+	// Prepare content line by line
+	const content = [
+		`Harness test successful? ${harnessSuccess ? "True" : "False"}`,
+		"Harness:",
+		...harnessCode, // Insert harness line by line
+		"",
+		"Report:",
+		harnessReport
+	].join("\n");
+	fs.writeFile(filePath, content, "utf8", (err) => {
+		if (err) {
+			vscode.window.showErrorMessage("Failed to write report.");
+			return;
+		}
+		// Show a success message
+		vscode.window.showInformationMessage(`${harnessName} report completed\n${filePath}`);
+
+		// Open the file inside VS Code
+		vscode.workspace.openTextDocument(filePath).then((doc) => {
+			vscode.window.showTextDocument(doc);
+		});
+	});
+}
+
+
+
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
 /**
@@ -182,10 +218,12 @@ function activate(context) {
 		// console.log(tree);
 		const editor = vscode.window.activeTextEditor;
 		let filePath;
+		let parentDirectory; // this is where the report will be generated
 		let file_name;
 		if (editor) {
 			filePath = editor.document.uri.fsPath; // Get the full path
-			const getFileExtension = path => path.replace(/.*\//, ''); // function for parsing path with regex
+			parentDirectory = path.dirname(filePath); // Get the parent directory name
+			const getFileExtension = path => path.replace(/.*\//, ''); // function to get file name
 			file_name = getFileExtension(filePath);
 			// console.log(file_name);
 			if (!file_name.endsWith('.c')) {
@@ -214,8 +252,16 @@ function activate(context) {
 		const context = context_output[1];
 		// extract code function (BFS)
 		const all_code = extractCode(entry_point, context);
-		console.log(all_code);
-		console.log(await sendRequest(entry_point, context, all_code, tree));
+		// console.log(all_code); // {function name: code}
+		const output = await sendRequest(entry_point, context, all_code, tree); // call backend
+		console.log(output);
+		const status = output["status"]
+		const message = output["message"]
+		if (status !== 200) {
+			vscode.window.showErrorMessage(`Request response ${status} with message ${message}`)
+			return;
+		}
+		writeAndOpenFile(parentDirectory, output); // write and open report within user workspace
 	});
 
 	// cleanup
