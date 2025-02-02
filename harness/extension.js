@@ -119,7 +119,7 @@ function extractCode(entry_point, context) {
 
 // function to call Django backend
 async function sendRequest(entry_point, context, all_code, tree) {
-	const url = "http://localhost:8000/generate"; // Django typically starts at Port 8000 local
+	const url = "http://localhost:8000/generate"; // Django typically starts at port 8000 local
 	const payload = {
 		entry: entry_point,
 		context: context,

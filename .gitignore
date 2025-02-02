@@ -1,3 +1,5 @@
 /harness/node_modules/
 /backend/venv/
 /backend/.env
+/backend/extension_backend/api/controllers/code_analysis/analysis_log.txt
+/backend/extension_backend/api/controllers/generate_harness/generate_log.txt
