@@ -157,7 +157,6 @@ function writeAndOpenFile(current_path, fileContent) {
 		`Harness test successful? ${harnessSuccess ? "True" : "False"}`,
 		"Harness:",
 		...harnessCode, // Insert harness line by line
-		"",
 		"Report:",
 		harnessReport
 	].join("\n");

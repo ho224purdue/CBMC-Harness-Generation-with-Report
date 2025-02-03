@@ -162,12 +162,11 @@ void insertionSort(int arr[], int size) {
     }
 }
 
-```json
 {
   "--bounds-check": "enabled",
   "--pointer-check": "enabled",
+  "--unwind": "6",
   "--memory-leak-check": "enabled",
-  "--unwind": "5",
-  "--trace": "enabled"
+  "--trace": "enabled",
+  "--stop-on-fail": "enabled"
 }
-```

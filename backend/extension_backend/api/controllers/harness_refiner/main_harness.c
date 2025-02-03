@@ -1,18 +1,27 @@
 void main_harness() {
     unsigned int user_input = nondet_uint();
-
     __CPROVER_assume(user_input <= 5);
 
-    int sensor_val1;
-    int sensor_val2;
-
-    __CPROVER_assume(sensor_val1 >= -1000 && sensor_val1 <= 1000);
-    __CPROVER_assume(sensor_val2 >= -1000 && sensor_val2 <= 1000);
-
-    global_counter = (int)nondet_uint();
+    // Initialize global counter
+    unsigned int global_counter = nondet_uint();
     __CPROVER_assume(global_counter >= 0 && global_counter <= 10);
 
-    int final_value = process_input_and_update_counter(user_input);
+    // Assumptions for stub function returns
+    int sensor_val1 = nondet_int();
+    int sensor_val2 = nondet_int();
+    
+    // Loop unwinding assumption
+    unsigned int i;
+    __CPROVER_assume(i < user_input);
 
-    __CPROVER_assert(final_value >= 0, "final_value is nonnegative");
+    // Assumptions for result constraints
+    int result = nondet_int();
+    __CPROVER_assume(result > -1000);
+
+    // Call main function
+    int ret = main();
+
+    // Post-conditions
+    __CPROVER_assert(ret >= 0, "main return value is non-negative");
+    __CPROVER_assert(global_counter >= 0, "global counter remains non-negative");
 }

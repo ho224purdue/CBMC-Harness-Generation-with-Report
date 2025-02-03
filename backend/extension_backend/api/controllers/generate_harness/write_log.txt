@@ -98,67 +98,73 @@ void insertionSort_harness() {
         "read_sensor_stub": "int read_sensor_stub(void)\n{\n  // Stub out sensor reading as a nondeterministic value:\n  return nondet_int();\n}"
     },
     "codeAnalysis": {
-        "main": {
-            "user_input": [
-                "unsigned int",
-                "input variable modeling",
-                "Input should be a bounded unsigned int, not exceeding 5"
-            ],
-            "global_counter": [
-                "int",
-                "global variable modeling",
-                "Global variable bounds between 0 and 10"
-            ]
-        },
-        "process_input_and_update_counter": {
-            "input": [
-                "unsigned int",
-                "input variable modeling",
-                "Input dictates loop iterations, bounded by user input in 'main'"
-            ],
-            "i": [
-                "unsigned int",
-                "loop unwinding assertions",
-                "Loop variable iterates from 0 to input - 1"
-            ],
-            "sensor_val1": [
-                "int",
-                "stub function modeling",
-                "Obtained from a stub representing nondeterministic sensor value"
-            ],
-            "sensor_val2": [
-                "int",
-                "stub function modeling",
-                "Another read from sensor stub, can vary"
-            ]
-        },
-        "read_sensor_stub": {
-            "return": [
-                "int",
-                "stub function modeling",
-                "Returns a nondeterministic integer from a stub"
-            ]
-        }
+        "global_counter": [
+            "int",
+            "global variable modeling",
+            "Must be initialized between 0 and 10 and accessible across functions"
+        ],
+        "user_input": [
+            "unsigned int",
+            "input variable modeling",
+            "Must be bounded and less than or equal to 5"
+        ],
+        "input": [
+            "unsigned int",
+            "input variable modeling",
+            "Loop counter must be bounded and match user_input constraints"
+        ],
+        "i": [
+            "unsigned int",
+            "loop unwinding assertions",
+            "Must iterate from 0 to input-1, ensuring loop terminates"
+        ],
+        "sensor_val1": [
+            "int",
+            "stub function modeling",
+            "Nondeterministic value returned from read_sensor_stub"
+        ],
+        "sensor_val2": [
+            "int",
+            "stub function modeling",
+            "Independent nondeterministic value from read_sensor_stub"
+        ],
+        "result": [
+            "int",
+            "input variable modeling",
+            "Combined value must be greater than -1000"
+        ],
+        "final_value": [
+            "int",
+            "input variable modeling",
+            "Must be non-negative based on process_input_and_update_counter return"
+        ]
     }
 }
 
-```c
 void main_harness() {
     unsigned int user_input = nondet_uint();
-
     __CPROVER_assume(user_input <= 5);
 
-    int sensor_val1;
-    int sensor_val2;
-
-    __CPROVER_assume(sensor_val1 >= -1000 && sensor_val1 <= 1000);
-    __CPROVER_assume(sensor_val2 >= -1000 && sensor_val2 <= 1000);
-
-    global_counter = (int)nondet_uint();
+    // Initialize global counter
+    unsigned int global_counter = nondet_uint();
     __CPROVER_assume(global_counter >= 0 && global_counter <= 10);
 
-    int final_value = process_input_and_update_counter(user_input);
+    // Assumptions for stub function returns
+    int sensor_val1 = nondet_int();
+    int sensor_val2 = nondet_int();
+    
+    // Loop unwinding assumption
+    unsigned int i;
+    __CPROVER_assume(i < user_input);
 
-    __CPROVER_assert(final_value >= 0, "final_value is nonnegative");
+    // Assumptions for result constraints
+    int result = nondet_int();
+    __CPROVER_assume(result > -1000);
+
+    // Call main function
+    int ret = main();
+
+    // Post-conditions
+    __CPROVER_assert(ret >= 0, "main return value is non-negative");
+    __CPROVER_assert(global_counter >= 0, "global counter remains non-negative");
 }
-```
