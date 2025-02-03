@@ -47,6 +47,7 @@ Navigate over to `backend` then run:
 python3 -m venv venv
 source venv/bin/activate  # (Windows: venv\Scripts\activate)
 pip install -r requirements.txt
+# Then navigate into extension_backend/
 python manage.py migrate (if needed)
 python manage.py runserver # this will start the Django server
 ```
