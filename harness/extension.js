@@ -100,17 +100,21 @@ function extractCode(entry_point, context) {
 		if (!visited.has(func)) {
 			// extract code
 			all_code[func] = extractFunctionCode(context.functionMap[func], func);
-
 			visited.add(func); // push into set
 			const index = context.functionIndex[func];
 			const n = context.adjacencyMatrix.length;
-			for (let i = 0; i < n; i++) {
-				const value = context.adjacencyMatrix[index][i];
-				if (value === 1) {
-					const funcChildren = indexFunction[i];
-					queue.push(funcChildren) // push into queue for BFS
+			try{
+				for (let i = 0; i < n; i++) {
+					const value = context.adjacencyMatrix[index][i];
+					if (value === 1) {
+						const funcChildren = indexFunction[i];
+						queue.push(funcChildren) // push into queue for BFS
+					}
 				}
+			} catch (error) {
+				console.log(`Function not found in adjacency matrix (extractCode function extension.js): ${error}`);
 			}
+
 		}
 
 	}
@@ -126,6 +130,7 @@ async function sendRequest(entry_point, context, all_code, tree) {
 		code: all_code,
 		dir_tree: tree
 	};
+	console.log(payload); // print what we're sending to backend
 	try {
 		const response = await fetch(url, {
 			method: "POST",
@@ -237,11 +242,13 @@ function activate(context) {
 		const cProjectDir = filePath; // user specified file and function should be within project directory
 		// console.log("Navigating into cProjectDir:", cProjectDir);
 		// prompt the user for target function name
-		const function_name = await vscode.window.showInputBox({ prompt: 'Enter target function name' });
+		let function_name = await vscode.window.showInputBox({ prompt: 'Enter target function name' });
 		if (!function_name) {
 			vscode.window.showErrorMessage(`Target function name within ${file_name} is required!`);
 			return;
 		}
+		// if user has included parentheses in any way
+		if (function_name.includes('(')) function_name.slice(0, function_name.indexOf('('));
 		// parse specified C file for target function
 		const context_output = readCFile(workspacePath, cProjectDir, function_name);
 		if (context_output === null) return;
@@ -251,7 +258,9 @@ function activate(context) {
 		const context = context_output[1];
 		// extract code function (BFS)
 		const all_code = extractCode(entry_point, context);
-		// console.log(all_code); // {function name: code}
+		// all the code {function name: code}
+		// for (let function_key in all_code) console.log(`Function: ${function_key}, code: ${all_code[function_key]}`);
+
 		const output = await sendRequest(entry_point, context, all_code, tree); // call backend
 		console.log(output);
 		const status = output["status"]

@@ -30,21 +30,37 @@ function extractFunctionsAndCalls(filePath, functionMap, callMatrix, allFunction
 
     function traverse(node, currentFunction = null) {
         if (node.type === 'function_definition') {
-            const funcName = node.child(1).text.replace(/\(.*/, '');
-            // We assume functionMap is already populated, but let's do safety:
+            let fullName = null;
+            for (let i = 0; i < node.childCount; i++) {
+                // we have to account for pointer declarator functions here
+                if (node.child(i).type === "function_declarator" || node.child(i).type === "pointer_declarator") {
+                    fullName = node.child(i).text.trim();
+                    if (fullName[0] === '*') fullName = fullName.slice(0, fullName.indexOf('*'));
+                    break;
+                }
+            }
+            if (fullName === null) {
+                for (let j = 0; j < node.childCount; j++) {
+                    console.log(`Type: ${node.child(j).type}, Text: ${node.child(j).text}`);
+                }
+                throw new Error(`Parsing functions through AST went wrong in parserCore extractFunctionsAndCalls (check above to debug)`);
+            }
+            const strippedString = fullName.replace(/\s+/g, '');
+            const end = strippedString.indexOf('(');
+            const funcName = strippedString.slice(0, end);
+
             functionMap[funcName] = filePath;
             addFunctionToList(funcName);
 
             for (let i = 0; i < node.childCount; i++) {
                 traverse(node.child(i), funcName);
             }
-        }
-        else if (node.type === 'call_expression' && currentFunction) {
-            const calledFuncName = node.child(0).text;
+        } else if (node.type === 'call_expression' && currentFunction) {
+            const calledFuncName = node.child(0).text.replace(/\s+/g, '');
+            // const calledFuncName = node.child(0).text;
             // Only record if it's in functionMap (i.e., locally defined)
             if (functionMap[calledFuncName]) {
                 addFunctionToList(calledFuncName);
-
                 if (!callMatrix[currentFunction]) {
                     callMatrix[currentFunction] = {};
                 }
@@ -55,14 +71,12 @@ function extractFunctionsAndCalls(filePath, functionMap, callMatrix, allFunction
             for (let i = 0; i < node.childCount; i++) {
                 traverse(node.child(i), currentFunction);
             }
-        }
-        else {
+        } else {
             for (let i = 0; i < node.childCount; i++) {
                 traverse(node.child(i), currentFunction);
             }
         }
     }
-
     traverse(root);
 }
 
@@ -106,37 +120,44 @@ function buildAdjacencyMatrix(allFunctions, callMatrix) {
  * @returns {string|null}        The entire text of that function definition, or null if not found.
  */
 function extractFunctionCode(filePath, functionName) {
-    // 1. Read and parse the file
     const sourceCode = fs.readFileSync(filePath, 'utf8');
     const tree = parser.parse(sourceCode);
     const root = tree.rootNode;
 
-    // 2. Recursively search for a matching function_definition node
     function findFunctionNode(node) {
         if (node.type === 'function_definition') {
-            // Typically, `node.child(1)` is the declarator, which might hold the function name
-            const declNode = node.child(1).text.replace(/\(.*/, ''); // remove the parameters after
-            if (declNode && declNode === functionName) {
+            let declNode = null;
+
+            // Look for the function declarator
+            for (let i = 0; i < node.childCount; i++) {
+                if (node.child(i).type === "function_declarator" || node.child(i).type === "pointer_declarator") {
+                    declNode = node.child(i).text.replace(/\s+/g, '');
+                    break;
+                }
+            }
+
+            if (!declNode) return null;
+
+            // Extract function name (before '(')
+            const funcName = declNode.replace(/\(.*/, '');
+            if (funcName === functionName) {
                 return node; // Found the function definition
             }
         }
-        // Otherwise, search all children
+
+        // Recursively search in children
         for (let i = 0; i < node.childCount; i++) {
             const found = findFunctionNode(node.child(i));
             if (found) return found;
         }
+
         return null;
     }
 
     const funcNode = findFunctionNode(root);
-    if (!funcNode) {
-        return null;
-    }
-
-    // 3. Return the raw text of the function definition node (including the body)
-    // `funcNode.text` gives you everything from the return type to the closing brace.
-    return funcNode.text;
+    return funcNode ? funcNode.text : null;
 }
+
 
 // helper function to only include local functions
 function collectLocalFunctions(filePath, functionMap) {
@@ -146,7 +167,24 @@ function collectLocalFunctions(filePath, functionMap) {
 
     function traverse(node) {
         if (node.type === 'function_definition') {
-            const funcName = node.child(1).text.replace(/\(.*/, '');
+            let fullName = null;
+            for (let i = 0; i < node.childCount; i++) {
+                if (node.child(i).type === "function_declarator" || node.child(i).type === "pointer_declarator") {
+                    fullName = node.child(i).text.trim();
+                    if (fullName[0] === '*') fullName = fullName.slice(0, fullName.indexOf('*'));
+                    break;
+                }
+            }
+            if (fullName === null) {
+                for (let j = 0; j < node.childCount; j++) {
+                    console.log(`Type: ${node.child(j).type}, Text: ${node.child(j).text}`);
+                }
+                throw new Error(`Parsing functions through AST went wrong in parserCore (check above to debug)`);
+            }
+            const strippedString = fullName.replace(/\s+/g, '');
+            const end = strippedString.indexOf('(');
+            const funcName = strippedString.slice(0, end);
+            // const funcName = strippedString.replace(/\(.*/, ''); // old code removing parenthese using regex
             functionMap[funcName] = filePath;
         }
         for (let i = 0; i < node.childCount; i++) {
