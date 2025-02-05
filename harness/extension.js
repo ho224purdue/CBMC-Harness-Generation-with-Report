@@ -248,7 +248,7 @@ function activate(context) {
 			return;
 		}
 		// if user has included parentheses in any way
-		if (function_name.includes('(')) function_name.slice(0, function_name.indexOf('('));
+		if (function_name.includes('(')) function_name = function_name.slice(0, function_name.indexOf('('));
 		// parse specified C file for target function
 		const context_output = readCFile(workspacePath, cProjectDir, function_name);
 		if (context_output === null) return;
@@ -258,7 +258,7 @@ function activate(context) {
 		const context = context_output[1];
 		// extract code function (BFS)
 		const all_code = extractCode(entry_point, context);
-		// all the code {function name: code}
+		// all the code {function name: code} (debugging purposes)
 		// for (let function_key in all_code) console.log(`Function: ${function_key}, code: ${all_code[function_key]}`);
 
 		const output = await sendRequest(entry_point, context, all_code, tree); // call backend

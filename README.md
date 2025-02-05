@@ -55,8 +55,9 @@ Now send a `curl` request or any API GET request over to `http://localhost:8000`
 
 ## **Quickstart**
 Make sure your backend server is running (`python manage.py runserver`) and activate extension through pressing `f5` with current active file in window being `extension.js`.
-Navigate your VS code workspace so that it opens the `cbmc` folder containing the sample C code. Open up the `main.c` file then `ctrl + shift + P`. Type `generate` within the dialogue box and then specify the `main` function. Upon waiting around 15 seconds you should receive the report relayed back from the backend system and opened up in VScode.
+Navigate your VS code workspace so that it opens the `cbmc` folder containing the sample C code. Open up the `main.c` file then `ctrl + shift + P`. Type `generate` within the dialogue box and then enter the `main` function. Upon waiting around 15 seconds you should receive the report relayed back from the backend system and opened up in VScode.
 
+*Note that the function name being entered has to be an exact match to a function within the current active C file on your screen
 
 ## **Additional Information**
 You'll also need to put the `.env` file containing the keys into the same folder as `CBMC_LLM_Harness_Generation/backend`
