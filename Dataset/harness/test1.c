@@ -1,7 +1,9 @@
 #include <assert.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include "http_client.h"  // Include the header file for HTTPClient_Send
+#include "http_cbmc_state.h"  // Include the header file for CBMC state functions
 
 void harness() {
     // Declare variables
@@ -12,11 +14,11 @@ void harness() {
     HTTPResponse_t * pResponse;
     uint32_t sendFlags;
 
-    // Allocate memory for the variables
-    pTransport = malloc(sizeof(TransportInterface_t));
-    pRequestHeaders = malloc(sizeof(HTTPRequestHeaders_t));
-    pRequestBodyBuf = malloc(reqBodyBufLen);
-    pResponse = malloc(sizeof(HTTPResponse_t));
+    // Allocate memory for the variables using CBMC state functions
+    pTransport = allocateTransportInterface(NULL);
+    pRequestHeaders = allocateHttpRequestHeaders(NULL);
+    pRequestBodyBuf = mallocCanFail(reqBodyBufLen);
+    pResponse = allocateHttpResponse(NULL);
 
     // Assume valid memory allocation
     __CPROVER_assume(pTransport != NULL);
