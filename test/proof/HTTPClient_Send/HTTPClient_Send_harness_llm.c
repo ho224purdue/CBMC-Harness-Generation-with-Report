@@ -5,7 +5,7 @@
 #include "http_client.h"  // Include the header file for HTTPClient_Send
 #include "http_cbmc_state.h"  // Include the header file for CBMC state functions
 
-void harness() {
+void HTTPClient_Send_harness() {
     // Declare variables
     TransportInterface_t * pTransport;
     HTTPRequestHeaders_t * pRequestHeaders;

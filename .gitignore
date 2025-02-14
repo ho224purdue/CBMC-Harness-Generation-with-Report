@@ -5,3 +5,4 @@
 /backend/extension_backend/api/controllers/flag_generator/flag_log.txt
 /backend/extension_backend/api/controllers/generate_harness/write_log.txt
 /backend/extension_backend/api/controllers/harness_refiner/harness_runner_log.txt
+.vscode
