@@ -1,0 +1,4 @@
+[ZoneTransfer]
+ZoneId=3
+ReferrerUrl=https://github.com/Russolves/CBMC_LLM_Harness_Generation/blob/main/backend/extension_backend/db.sqlite3
+HostUrl=https://raw.githubusercontent.com/Russolves/CBMC_LLM_Harness_Generation/refs/heads/main/backend/extension_backend/db.sqlite3
