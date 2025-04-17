@@ -26,7 +26,7 @@ def generate_report(workspace, result):
     current_dir = os.getcwd()
     os.chdir(get_sibling_dir(current_dir, "cbmc/" + workspace + "/test/cbmc/proofs"))
     functions_set = set(os.listdir())
-    functionName = harnessName[: 0 - len("harness") - 1] # clean name of '_harness'
+    functionName = harnessName[: 0 - len("harness") - 1] # clean name without '_harness'
     # search for name of function in ls
     if functionName not in functions_set:
         raise Exception(f"Function was not found in list of functions in {os.getcwd()}")
@@ -54,16 +54,15 @@ def generate_report(workspace, result):
             check=True
         )
         print("Run successful!\n", output.stdout)
-    except FileNotFoundError as e:
+    except subprocess.CalledProcessError as err:
         # Handle missing executable
-        stderr = "Error: 'litani' not found. Please install Litani and ensure it's on your PATH.\nUsing: apt install -y litani-1.29.0.deb"
-        print(stderr)
+        print(err)
         if "report" in result:
-            result["report"] = result["report"] + f"\n Another error also occurred\n{stderr}"
+            result["report"] = result["report"] + f"\n Another error also occurred \n{err}"
         else:
             if "correct" in result:
                 result["correct"] = False
-            result["report"] = stderr
+            result["report"] = err
         return result
     return result
     
