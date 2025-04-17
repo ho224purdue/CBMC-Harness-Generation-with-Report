@@ -48,7 +48,7 @@ def generate_report(workspace, result):
     os.chdir("..")
     try:
         output = subprocess.run(
-            ["litani", "--version"],
+            ["./run-cbmc-proofs.py", "--proofs", functionName],
             capture_output=True,
             text=True,
             check=True
