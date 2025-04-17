@@ -14,14 +14,12 @@ unsigned int nondet_uint();
 __CPROVER_assume(condition);
 __CPROVER_assert(condition, "assertion message");
 void* mallocCanFail(size_t size);
-__CPROVER_assume(var <= CBMC_MAX_OBJECT_SIZE);
 
 For example:
 void* mallocCanFail(size_t size);
 
 Would become:
 size_t len = nondet_size_t();
-__CPROVER_assume(len > 0 && len <= CBMC_MAX_OBJECT_SIZE);
 char *buf = mallocCanFail(len);
 
 

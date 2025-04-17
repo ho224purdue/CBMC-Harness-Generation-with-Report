@@ -31,7 +31,7 @@ The project consists of 3 main directories:
 ![System Architecture](system_architecture.png)
 
 ## **Setting Up Project**
-If you haven't already done so, clone the repository
+If you haven't already done so, clone the repository and open it as a workspace (when you select open folder in VS code's Explorer tab)
 ### 1. Install all necessary packages for JS (frontend)
 Navigate into the `harness` directory then run:
 ```bash
@@ -62,7 +62,7 @@ Now send a `curl` request or any API GET request over to `http://localhost:8000`
 
 ## **Quickstart**
 Make sure your backend server is running (`python manage.py runserver`) and activate extension through pressing `f5` with current active file in window being `extension.js`.
-Open your VS code workspace so that it opens the `cbmc/coreHTTP` folder over at `backend`. Bring up the `core_http_client.c` file within `source/` then `ctrl + shift + P`. Type `generate` within the dialogue box and then enter a function like `HTTPClient_AddHeader`. Once the .txt file is automatically opened up in VScode you should be able to view the complete coverage `html` report at `~backend/cbmc/coreHTTP/test` where you would normally expect the report directory to be at.
+Open your VS code workspace through the explorer tab so that it opens the `/coreHTTP` folder over at `backend` (It's important that you open it at this directory level). Bring up the `core_http_client.c` file within `source/` then `ctrl + shift + P`. Type `generate` within the dialogue box and then enter a function like `HTTPClient_AddHeader`. Once the .txt file is automatically opened up in VScode you should be able to view the complete coverage `html` report at `~backend/cbmc/coreHTTP/test` where you would normally expect the report directory to be at.
 
 *Note that the function name being entered has to be an exact case-sensitive match to a function within the current active C file on your screen
 
