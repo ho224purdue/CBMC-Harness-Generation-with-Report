@@ -41,23 +41,28 @@ Navigate over to the `extension.js` file and then open it so it is your current 
 helloworld
 ```
 Pressing enter should show an information box indicating successful set up
-### 3. Getting Django running
-Navigate over to `backend` then run:
+### 3. Getting Django running and cloning the FreeRTOS repository (coreHTTP)
+You'll need to clone the [FreeRTOS coreHTTP](https://github.com/FreeRTOS/coreHTTP) repo over in order to start generating complete reports with coverage.
+First, navigate over to `backend` then run:
 ```
 python3 -m venv venv
 source venv/bin/activate  # (Windows: venv\Scripts\activate)
 pip install -r requirements.txt
-# Then navigate into extension_backend/
-python manage.py migrate (if needed)
+mkdir cbmc # create a folder called 'cbmc' here first
+cd cbmc
+git clone https://github.com/FreeRTOS/coreHTTP.git # then clone the coreHTTP repository
+cd ..
+cd extension_backend # Then navigate into extension_backend/
 python manage.py runserver # this will start the Django server
 ```
 Now send a `curl` request or any API GET request over to `http://localhost:8000` the response you receive should indicate that Django is up and running
 
+
 ## **Quickstart**
 Make sure your backend server is running (`python manage.py runserver`) and activate extension through pressing `f5` with current active file in window being `extension.js`.
-Navigate your VS code workspace so that it opens the `cbmc` folder containing the sample C code. Open up the `main.c` file then `ctrl + shift + P`. Type `generate` within the dialogue box and then enter the `main` function. Upon waiting around 15 seconds you should receive the report relayed back from the backend system and opened up in VScode.
+Open your VS code workspace so that it opens the `cbmc/coreHTTP` folder over at `backend`. Bring up the `core_http_client.c` file within `source` then `ctrl + shift + P`. Type `generate` within the dialogue box and then enter a function like `HTTPClient_AddHeader`. Once the .txt file is opened up in VScode you should be able to view the complete coverage `html` report at `~backend/cbmc/coreHTTP/test` where you would normally expect the report directory to be at.
 
-*Note that the function name being entered has to be an exact match to a function within the current active C file on your screen
+*Note that the function name being entered has to be an exact case-sensitive match to a function within the current active C file on your screen
 
 ## **Additional Information**
 You'll also need to put the `.env` file containing the keys into the same folder as `CBMC_LLM_Harness_Generation/backend`
