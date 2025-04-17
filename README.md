@@ -13,10 +13,12 @@ This system is a VScode extension for developers, allowing them to generate a me
 
 Ensure you have the following installed on your system:
 
-- `node` I have v20.6.1 on my environment
-- `npm`I have version 9.8.1
+- `node` Use `curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash`, then restart terminal then run `source ~/.nvm/nvm.sh`. Finally run `nvm install 20.6.1`, then `nvm use 20.6.1`
+- `npm` Use `npm install -g npm@9.8.1`
 - `python` You'll need pip
 - `cbmc` Environmental variables have to be set up, has to be able to work from terminal
+- `litani` Has to be installed (use `apt install -y litani-1.29.0.deb`)
+- The proofs in FreeRTOS have to be able to be successfully run through the command `./run-cbmc-proofs.py --proofs HTTPClient_AddHeader` in `~backend/cbmc/coreHTTP/test/cbmc/proofs`as an example for the complete report to be generated
 
 ## **Project Structure**
 
@@ -60,7 +62,7 @@ Now send a `curl` request or any API GET request over to `http://localhost:8000`
 
 ## **Quickstart**
 Make sure your backend server is running (`python manage.py runserver`) and activate extension through pressing `f5` with current active file in window being `extension.js`.
-Open your VS code workspace so that it opens the `cbmc/coreHTTP` folder over at `backend`. Bring up the `core_http_client.c` file within `source` then `ctrl + shift + P`. Type `generate` within the dialogue box and then enter a function like `HTTPClient_AddHeader`. Once the .txt file is opened up in VScode you should be able to view the complete coverage `html` report at `~backend/cbmc/coreHTTP/test` where you would normally expect the report directory to be at.
+Open your VS code workspace so that it opens the `cbmc/coreHTTP` folder over at `backend`. Bring up the `core_http_client.c` file within `source/` then `ctrl + shift + P`. Type `generate` within the dialogue box and then enter a function like `HTTPClient_AddHeader`. Once the .txt file is automatically opened up in VScode you should be able to view the complete coverage `html` report at `~backend/cbmc/coreHTTP/test` where you would normally expect the report directory to be at.
 
 *Note that the function name being entered has to be an exact case-sensitive match to a function within the current active C file on your screen
 
