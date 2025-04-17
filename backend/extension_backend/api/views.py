@@ -8,8 +8,10 @@ from .controllers.code_analysis.analysis import analyze
 from .controllers.flag_generator.flags import get_flags
 from .controllers.generate_harness.write import write_harness
 from .controllers.harness_refiner.harness_runner import refine_run_harness
+from .controllers.generate_report.report import generate_report
 
 def initial(request):
+    generate_report()
     return JsonResponse({"message": "Server up and running!", "status": 200})
 
 # use curl http://localhost:8000/prompt -H "Content-Type: application/json" -d '{"company": specified-company-here, "prompt": your-prompt-here}'
@@ -42,6 +44,8 @@ def generate(request):
             if not request.body:
                 return JsonResponse({"status": 400, "message": "Empty request body"})
             data = json.loads(request.body) # context object from frontend
+            workspace = data["workspace"]
+
             # create thread pool executor with 2 workers (scalable)
             with concurrent.futures.ThreadPoolExecutor(max_workers = 2) as executor:
                 # schedule the API calls concurrently
@@ -52,7 +56,9 @@ def generate(request):
                 flags = future2.result()
             harness = write_harness(company, data, assumptions, model) # generate harness LLM codeblock
             result = refine_run_harness(company, data, harness, assumptions, flags, 1, model) # iterate for a max 1 times and fix errors within harness (if any) LLM codeblock 
+            result = generate_report(workspace, result) #result["name"], result["generated_harness"]
             # print(result)
+
             # correct output through iteration LLM codeblock
             return JsonResponse({
                 "status": 200,

@@ -122,13 +122,14 @@ function extractCode(entry_point, context) {
 }
 
 // function to call Django backend
-async function sendRequest(entry_point, context, all_code, tree) {
+async function sendRequest(entry_point, context, all_code, tree, workspace) {
 	const url = "http://localhost:8000/generate"; // Django typically starts at port 8000 local
 	const payload = {
 		entry: entry_point,
 		context: context,
 		code: all_code,
-		dir_tree: tree
+		dir_tree: tree,
+		workspace: workspace
 	};
 	console.log(payload); // print what we're sending to backend
 	try {
@@ -261,7 +262,11 @@ function activate(context) {
 		// all the code {function name: code} (debugging purposes)
 		// for (let function_key in all_code) console.log(`Function: ${function_key}, code: ${all_code[function_key]}`);
 
-		const output = await sendRequest(entry_point, context, all_code, tree); // call backend
+		// get current workspace folder name
+		const workspaceFolders = vscode.workspace.workspaceFolders;
+		const workspaceName = workspaceFolders[0].name;
+
+		const output = await sendRequest(entry_point, context, all_code, tree, workspaceName); // call backend
 		console.log(output);
 		const status = output["status"]
 		const message = output["message"]
