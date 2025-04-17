@@ -53,7 +53,7 @@ def generate_report(workspace, result):
             text=True,
             check=True
         )
-        print("Litani version:", output.stdout)
+        print("Run successful!\n", output.stdout)
     except FileNotFoundError as e:
         # Handle missing executable
         stderr = "Error: 'litani' not found. Please install Litani and ensure it's on your PATH.\nUsing: apt install -y litani-1.29.0.deb"
