@@ -56,7 +56,7 @@ def generate_report(workspace, result):
         print("Run successful!\n", output.stdout)
     except subprocess.CalledProcessError as err:
         # Handle missing executable
-        print(err)
+        print("run-cbmc-proofs.py failed (exit %d) while running %s\nstdout:\n%s\nstderr:\n%s", err.returncode, err.cmd, err.stdout, err.stderr)
         if "report" in result:
             result["report"] = result["report"] + f"\n Another error also occurred \n{err}"
         else:
