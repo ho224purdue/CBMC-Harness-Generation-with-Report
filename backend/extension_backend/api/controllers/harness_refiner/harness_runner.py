@@ -152,7 +152,7 @@ def fix_error(company, context_data, generated_harness, error_report, analysis_a
         "adjacencyMatrix": context["adjacencyMatrix"],
         "functionIndex": context["functionIndex"],
         "functionCode": code,
-        "generatedHarness": generate_harness,
+        "generatedHarness": generated_harness,
         "errorReport": error_report,
         "assumptions": analysis_assumptions,
         "cbmcFlags": cbmc_flags
