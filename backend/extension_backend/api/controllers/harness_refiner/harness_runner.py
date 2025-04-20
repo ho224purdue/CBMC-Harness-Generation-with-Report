@@ -120,7 +120,7 @@ def check_harness(entry_point, generated_harness, cbmc_flags, script_dir):
     # print(commands)
     # run CBMC through subprocess
     try:
-        result = subprocess.run(commands, capture_output=True, text=True, check=True)
+        result = subprocess.run(commands, capture_output=True, text=True, check=True, cwd=script_dir)
         print("Success:\n", result.stdout)
         parsedResults = parseReport(result.stdout)
         parsedResults["name"] = harnessName
