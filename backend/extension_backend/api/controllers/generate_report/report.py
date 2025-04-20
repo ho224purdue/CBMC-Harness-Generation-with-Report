@@ -54,6 +54,64 @@ def generate_report(workspace, result):
             check=True
         )
         print("Run successful!\n", output.stdout)
+        # parse JSON
+        # Get the proof directory path
+        proof_dir = os.path.join(os.getcwd(), functionName)
+        json_dir = os.path.join(proof_dir, "json")
+        
+        # Initialize coverage data structure
+        coverage_data = {
+            'Function': functionName,
+            'Number of reported errors': 0,
+            'Total coverage': 0.0,
+            'Coverage of harnessed function': 0.0,
+            'Total reachable lines': 0,
+            'Reachable lines harnessed': 0
+        }
+
+        # Process JSON files if they exist
+        json_files = {
+            'result': 'viewer-result.json',
+            'coverage': 'viewer-coverage.json',
+            'property': 'viewer-property.json'
+        }
+
+        if os.path.exists(json_dir):
+            # Load JSON data
+            data = {}
+            for key, fname in json_files.items():
+                path = os.path.join(json_dir, fname)
+                if os.path.exists(path):
+                    with open(path, 'r') as f:
+                        data[key] = json.load(f)
+
+            # Process error counts
+            if 'result' in data:
+                false_entries = set()
+                for entry in data['result']["viewer-result"]['results']['false']:
+                    if "no-body" not in entry and "unwind" not in entry:
+                        prop = data['property']["viewer-property"]["properties"][entry]
+                        false_entries.add(prop["location"]["line"])
+                coverage_data['Number of reported errors'] = len(false_entries)
+
+            # Process coverage data
+            if 'coverage' in data:
+                cov = data['coverage']["viewer-coverage"]
+                coverage_data.update({
+                    'Total coverage': cov['overall_coverage']['percentage'],
+                    'Total reachable lines': cov['overall_coverage']['total']
+                })
+
+                # Find harness-specific coverage
+                for func in cov.get('function_coverage', {}):
+                    if func.endswith(harnessName):
+                        coverage_data['Coverage of harnessed function'] = cov['function_coverage'][func].get('percentage', 0)
+                        coverage_data['Reachable lines harnessed'] = cov['function_coverage'][func].get('total', 0)
+                        break
+
+        # Add to result
+        result["coverage"] = coverage_data
+        return result
     except subprocess.CalledProcessError as err:
         # Handle missing executable
         print(f"run-cbmc-proofs.py failed (exit {err.returncode}) while running {err.cmd}\nstdout:\n{err.stdout}\nstderr:\n{err.stderr}")
@@ -64,7 +122,15 @@ def generate_report(workspace, result):
                 result["correct"] = False
             result["report"] = err
         return result
-    return result
+    except Exception as e:
+        print(f"Error processing coverage data: {str(e)}")
+        if "report" in result:
+            result["report"] = result["report"] + f"\n Another error also occurred {e}"
+        else:
+            if "correct" in result:
+                result["correct"] = False
+            result["report"] = e
+        return result
     
     
 

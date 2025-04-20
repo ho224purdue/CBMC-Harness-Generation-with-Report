@@ -66,7 +66,8 @@ def generate(request):
                 "success": result["correct"],
                 "report": result["report"],
                 "harness_name": result["name"],
-                "harness": result["generated_harness"]
+                "harness": result["generated_harness"],
+                "coverage": result.get("coverage", None) # coverage can be None depending on whether generate_report is successful
                 })
         except json.JSONDecodeError:
             return JsonResponse({"status": 400, "message": "JSON decoding error"})

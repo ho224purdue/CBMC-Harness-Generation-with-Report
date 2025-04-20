@@ -159,13 +159,24 @@ function writeAndOpenFile(current_path, fileContent) {
 
 	// Write the file
 	// Prepare content line by line
-	const content = [
+	let ls_content = [
 		`Harness test successful? ${harnessSuccess ? "True" : "False"}`,
 		"Harness:",
 		...harnessCode, // Insert harness line by line
 		"Report:",
 		harnessReport
-	].join("\n");
+	];
+	// if coverage is returned
+	if (fileContent.coverage) {
+		ls_content.push("Coverage:");
+		ls_content.push(`Function: ${fileContent.coverage.Function}`);
+		ls_content.push(`Number of reported errors: ${fileContent.coverage["Number of reported errors"]}`);
+		ls_content.push(`Total coverage: ${fileContent.coverage['Total coverage'].toFixed(1)}%`);
+		ls_content.push(`Coverage of only harnessed function: ${fileContent.coverage['Coverage of harnessed function'].toFixed(1)}%`);
+		ls_content.push(`Total reachable lines: ${fileContent.coverage['Total reachable lines']}`);
+		ls_content.push(`Total reachable lines for harnessed function: ${fileContent.coverage['Reachable lines harnessed']}`);
+	}
+	const content = ls_content.join("\n");
 	fs.writeFile(filePath, content, "utf8", (err) => {
 		if (err) {
 			vscode.window.showErrorMessage("Failed to write report.");
