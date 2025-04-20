@@ -86,7 +86,8 @@ def parseReport(report):
     # Add error keywords here (Case sensitive)!
     error_keywords = [
         "no body for callee",
-        "not found"
+        "not found",
+        "syntax error"
     ]
     keyword_pattern = "|".join(re.escape(keyword) for keyword in error_keywords)
     error_pattern = re.compile(r"^\[.*\] line \d+ .*(" + keyword_pattern + r").* FAILURE$")

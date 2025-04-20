@@ -55,7 +55,7 @@ def generate(request):
                 assumptions = future1.result()
                 flags = future2.result()
             harness = write_harness(company, data, assumptions, model) # generate harness LLM codeblock
-            result = refine_run_harness(company, data, harness, assumptions, flags, 1, model) # iterate for a max 1 times and fix errors within harness (if any) LLM codeblock 
+            result = refine_run_harness(company, data, harness, assumptions, flags, 3, model) # iterate for a max 3 times and fix errors within harness (if any) LLM codeblock 
             result = generate_report(workspace, result) #result["name"], result["generated_harness"]
             # print(result)
 
