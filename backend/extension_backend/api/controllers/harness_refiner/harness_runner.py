@@ -130,14 +130,14 @@ def check_harness(entry_point, generated_harness, cbmc_flags, script_dir):
         print("File was not found within system:\n", error)
         log_file_path = os.path.join(script_dir, "harness_runner_log.txt")
         with open(log_file_path, 'a') as file: # log CBMC not found error
-            file.write(f"CBMC was not found on system:{error}")
+            file.write(f"CBMC was not found on system:{error}\n")
         errorResult = {"success": False, "report": f"File not found on system: {error}", "name": harnessName}
         return errorResult
     except subprocess.CalledProcessError as e:
         print("System error occurred:\n", e.stderr)
         log_file_path = os.path.join(script_dir, "harness_runner_log.txt")
         with open(log_file_path, 'a') as file: # log error within harness_runner_log.txt
-            file.write(f"System error occurred:\n{e.stderr}")
+            file.write(f"System error occurred:\n{e.stderr}\n")
         errorResult = {"success": False, "report": f"System error occurred: {e.stderr}", "name": harnessName}
         return errorResult
 
@@ -167,7 +167,7 @@ def fix_error(company, context_data, generated_harness, error_report, analysis_a
     with open(log_file_path, 'a') as file:
         file.write(f"Iteration {iteration}:\n")
         file.write(prompt + '\n')
-        file.write(response)
+        file.write(response + '\n')
 
     clean_response = response.strip("`").replace("c\n", "", 1) # strip start & end ``` and "json" text
     output = json.loads(clean_response) # Convert JSON string to Python dictionary
@@ -183,7 +183,7 @@ def refine_run_harness(company, context_data, generated_harness, analysis_assump
     result = {"correct": False, "generated_harness": generated_harness, "name": None}
     # validate
     validationResult = check_harness(entry_point, generated_harness, cbmc_flags, script_dir)
-    if validationResult["success"] == False and (validationResult["report"].startswith("File not found on system:") or validationResult["report"].startswith("System error occurred:")):
+    if validationResult["success"] == False and (validationResult["report"].startswith("File not found on system:")):
         result["report"] = validationResult["report"]
         result["name"] = validationResult["name"]
         return result
@@ -194,11 +194,10 @@ def refine_run_harness(company, context_data, generated_harness, analysis_assump
         return result
     # log output in .txt file
     with open(log_file_path, 'w') as file:
-        file.write("Error detected!\n")
+        file.write("Error detected during run!\n")
     # commence error fixing
-    correctness = False
     for times_run in range(maxIter):
-        generated_harness = fix_error(company, context_data, generated_harness, error_report, analysis_assumptions, cbmc_flags, log_file_path, model, times_run + 1)
+        generated_harness = fix_error(company, context_data, generated_harness, validationResult["report"], analysis_assumptions, cbmc_flags, log_file_path, model, times_run + 1)
         validationResult = check_harness(entry_point, generated_harness, cbmc_flags, script_dir)
         if validationResult["success"]:
             result["generated_harness"] = generated_harness
