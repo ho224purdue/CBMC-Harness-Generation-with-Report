@@ -1,5 +1,7 @@
 import os
 import subprocess
+import json
+import pandas as pd
 
 def go_up_directories(start_path, levels=1):
     """Move up `levels` directories from `start_path`."""
@@ -54,6 +56,79 @@ def generate_report(workspace, result):
             check=True
         )
         print("Run successful!\n", output.stdout)
+                # Directory containing the JSON files
+        results=[]
+        # Iterate over each subdirectory in the llm_proofs directory
+        path = os.getcwd()
+        next_level_dirs = [os.path.join(path, d) for d in os.listdir(path) if os.path.isdir(os.path.join(path, d))]
+
+        for subdir in next_level_dirs:
+            path1=subdir
+            next2 = [os.path.join(path1, d) for d in os.listdir(path1) if os.path.isdir(os.path.join(path1, d))]
+            for subdir2 in next2:
+                for subdir3,_,_files in os.walk(subdir2+"/json"):
+                    # Construct the full file path
+                    file_path = os.path.join(subdir3,'viewer-result.json')
+                    file_path1 = os.path.join(subdir3,'viewer-coverage.json')
+                    file_path2 = os.path.join(subdir3,'viewer-property.json')
+                    # Load JSON data from the file
+                    with open(file_path, 'r') as f:
+                        data = json.load(f)
+                    with open(file_path1, 'r') as f1:
+                        data1 = json.load(f1)
+                    with open(file_path2, 'r') as f2:
+                        data2 = json.load(f2)
+                    # Count the number of false entries
+                    uniquef = set()
+                    uniquet = set()
+                    for each in data["viewer-result"]['results']['true']:
+                        if("no-body" in each or "unwind" in each):
+                            continue
+                        uniquet.add(data2["viewer-property"]["properties"][each]["location"]["line"])
+                    for each in data["viewer-result"]['results']['false']:
+                        if("no-body" in each or "unwind" in each):
+                            continue
+                        uniquef.add(data2["viewer-property"]["properties"][each]["location"]["line"])
+                    false_count = len(uniquef)
+                    print(false_count)
+                    
+                    
+                    # Append the results to the list
+                    for each in data1["viewer-coverage"]["function_coverage"]:
+                        if(each.endswith("harness.c")):
+                            for each1 in data1["viewer-coverage"]["function_coverage"][each]:
+                                if(each1.endswith("harness")):
+                                    store = data1["viewer-coverage"]["function_coverage"][each][each1]
+                    
+                    current_dir = os.getcwd()
+                    print(current_dir)
+                    subdir_value = subdir.replace(current_dir+"/", "")
+                    print(subdir_value)
+                    if "source/core_http_client.c" in data1["viewer-coverage"]["function_coverage"]:
+                        coverage_value = data1["viewer-coverage"]["function_coverage"]["source/core_http_client.c"][subdir_value]["percentage"]
+                        total_reachable_lines_harnessed = data1["viewer-coverage"]["function_coverage"]["source/core_http_client.c"][subdir_value]["total"]
+                    else:
+                        coverage_value = 0
+                        total_reachable_lines_harnessed = 0
+
+                    # Append the dictionary to results
+                    results.append({
+                        'Function': subdir_value,
+                        'Number of reported errors': false_count,
+                        'Total coverage': data1["viewer-coverage"]['overall_coverage']['percentage'],
+                        'Coverage of only harnessed function': coverage_value,
+                        'Total reachable lines': data1["viewer-coverage"]['overall_coverage']['total'],
+                        'Total reachable lines for only harnessed function': total_reachable_lines_harnessed
+                    })
+
+        # Create a DataFrame from the results
+        df = pd.DataFrame(results)
+
+        # Save the DataFrame to an Excel file
+        output_file = r'after.xlsx'
+        df.to_excel(output_file, index=False)
+
+        print(f"Excel file with false counts has been generated: {output_file}")
     except subprocess.CalledProcessError as err:
         # Handle missing executable
         print(f"run-cbmc-proofs.py failed (exit {err.returncode}) while running {err.cmd}\nstdout:\n{err.stdout}\nstderr:\n{err.stderr}")
