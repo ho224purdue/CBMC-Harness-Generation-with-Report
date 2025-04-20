@@ -200,6 +200,7 @@ def refine_run_harness(company, context_data, generated_harness, analysis_assump
         generated_harness = fix_error(company, context_data, generated_harness, validationResult["report"], analysis_assumptions, cbmc_flags, log_file_path, model, times_run + 1)
         validationResult = check_harness(entry_point, generated_harness, cbmc_flags, script_dir)
         if validationResult["success"]:
+            result["name"] = validationResult["name"]
             result["generated_harness"] = generated_harness
             result["report"] = validationResult["report"]
             result["correct"] = True
@@ -207,4 +208,5 @@ def refine_run_harness(company, context_data, generated_harness, analysis_assump
     # if it still fails, return most recent updated harness
     result["generated_harness"] = generated_harness
     result["report"] = validationResult["report"]
+    result["name"] = validationResult["name"]
     return result
