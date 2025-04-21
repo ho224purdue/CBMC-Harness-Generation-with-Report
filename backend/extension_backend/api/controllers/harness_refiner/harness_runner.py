@@ -170,8 +170,8 @@ def fix_error(company, context_data, generated_harness, error_report, analysis_a
         file.write(response + '\n')
 
     clean_response = response.strip("`").replace("c\n", "", 1) # strip start & end ``` and "json" text
-    output = json.loads(clean_response) # Convert JSON string to Python dictionary
-    return output
+    # output = json.loads(clean_response) # Convert JSON string to Python dictionary
+    return clean_response
 
 # call analysis function (write prompt logic here)
 def refine_run_harness(company, context_data, generated_harness, analysis_assumptions, cbmc_flags, maxIter, model):
