@@ -171,8 +171,8 @@ function writeAndOpenFile(current_path, fileContent) {
 		ls_content.push("Coverage:");
 		ls_content.push(`Function: ${fileContent.coverage.Function}`);
 		ls_content.push(`Number of reported errors: ${fileContent.coverage["Number of reported errors"]}`);
-		ls_content.push(`Total coverage: ${parseFloat(fileContent.coverage['Total coverage']).toFixed(1)}%`);
-		ls_content.push(`Coverage of only harnessed function: ${parseFloat(fileContent.coverage['Coverage of only harnessed function']).toFixed(1)}%`);
+		ls_content.push(`Total coverage: ${(parseFloat(fileContent.coverage['Total coverage']) * 100).toFixed(2)}%`);
+		ls_content.push(`Coverage of only harnessed function: ${(parseFloat(fileContent.coverage['Coverage of only harnessed function'])* 100).toFixed(2)}%`);
 		ls_content.push(`Total reachable lines: ${fileContent.coverage['Total reachable lines']}`);
 		ls_content.push(`Total reachable lines for harnessed function: ${fileContent.coverage['Total reachable lines for only harnessed function']}`);
 	}
@@ -278,6 +278,21 @@ function activate(context) {
 		const workspaceName = workspaceFolders[0].name;
 
 		const output = await sendRequest(entry_point, context, all_code, tree, workspaceName); // call backend
+		// const output = {
+		// 	"coverage": {
+		// 	  "Function": "HTTPClient_AddHeader",
+		// 	  "Number of reported errors": 20,
+		// 	  "Total coverage": 0.8279569892473119,
+		// 	  "Coverage of only harnessed function": 0.5384615384615384,
+		// 	  "Total reachable lines": 93,
+		// 	  "Total reachable lines for only harnessed function": 52
+		// 	},
+		// 	"harness": "/*\n * coreHTTP v3.1.1\n * Copyright (C) 2024 Amazon.com, Inc. or its affiliates.  All Rights Reserved.\n * SPDX-License‑Identifier: MIT\n * Permission is hereby granted, free of charge, …",
+		// 	"harness_name": "HTTPClient_AddHeader_harness",
+		// 	"message": "Data successfully received!",
+		// 	"status": 200
+		//   }
+		  
 		console.log(output);
 		const status = output["status"]
 		const message = output["message"]
