@@ -171,8 +171,8 @@ function writeAndOpenFile(current_path, fileContent) {
 		ls_content.push("Coverage:");
 		ls_content.push(`Function: ${fileContent.coverage.Function}`);
 		ls_content.push(`Number of reported errors: ${fileContent.coverage["Number of reported errors"]}`);
-		ls_content.push(`Total coverage: ${fileContent.coverage['Total coverage'].toFixed(1)}%`);
-		ls_content.push(`Coverage of only harnessed function: ${fileContent.coverage['Coverage of harnessed function'].toFixed(1)}%`);
+		ls_content.push(`Total coverage: ${parseFloat(fileContent.coverage['Total coverage']).toFixed(1)}%`);
+		ls_content.push(`Coverage of only harnessed function: ${parseFloat(fileContent.coverage['Coverage of harnessed function']).toFixed(1)}%`);
 		ls_content.push(`Total reachable lines: ${fileContent.coverage['Total reachable lines']}`);
 		ls_content.push(`Total reachable lines for harnessed function: ${fileContent.coverage['Reachable lines harnessed']}`);
 	}
